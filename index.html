@@ -1,0 +1,1145 @@
+<meta charset="utf-8">
+<title>Gestão de Contratos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ink:#101820; --ink-soft:#48525C; --muted:#6B7680;
+    --paper:#EEF1F3; --surface:#FFFFFF; --surface-2:#F7F8F9; --border:#D9DFE3;
+    --brand:#3B5323; --brand-deep:#22300F; --brand-tint:#E7EBDD;
+    --cta-bg:#22300F; --cta-text:#FFFFFF; --cta-sub:#D9E0C9; /* fixed deep treatment, same in both themes on purpose */
+    --btn-bg:#3B5323; --btn-bg-hover:#22300F; /* filled-button bg holds white text in both themes, independent of the brand text-accent token */
+    --accent:#A8811F; --accent-tint:#F2E9CD;
+    --her-red:#A6192E; --her-blue:#1B3A6B; /* fixed heraldic accents from the CEBW crest — decorative only, never reused for semantic alerts */
+    --ok:#2F8F5B; --ok-tint:#E3F3EA;
+    --warn:#B4890F; --warn-tint:#FBF1D3;
+    --urgent:#C96F22; --urgent-tint:#FBE7D5;
+    --critical:#C7443B; --critical-tint:#FAE1DE;
+    --expired:#2B2F36; --expired-tint:#E3E4E6;
+    --idle:#8890A0; --idle-tint:#EAEBEF;
+    --shadow: 0 1px 2px rgba(16,24,32,.06), 0 8px 24px -12px rgba(16,24,32,.18);
+    --radius: 14px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#EDF1F4; --ink-soft:#B7C1CA; --muted:#8A939C;
+      --paper:#0D1317; --surface:#161D22; --surface-2:#1B2329; --border:#2A343B;
+      --brand:#9AC17C; --brand-deep:#C3DDA9; --brand-tint:#26301A;
+      --accent:#D4B14E; --accent-tint:#332A16;
+      --ok:#5FCB93; --ok-tint:#123322;
+      --warn:#E6C25E; --warn-tint:#362B10;
+      --urgent:#EC9D63; --urgent-tint:#3A2413;
+      --critical:#EC8078; --critical-tint:#3A1815;
+      --expired:#B7BEC6; --expired-tint:#23282D;
+      --idle:#9AA2B4; --idle-tint:#20242C;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 28px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#EDF1F4; --ink-soft:#B7C1CA; --muted:#8A939C;
+    --paper:#0D1317; --surface:#161D22; --surface-2:#1B2329; --border:#2A343B;
+    --brand:#9AC17C; --brand-deep:#C3DDA9; --brand-tint:#26301A;
+    --accent:#D4B14E; --accent-tint:#332A16;
+    --ok:#5FCB93; --ok-tint:#123322;
+    --warn:#E6C25E; --warn-tint:#362B10;
+    --urgent:#EC9D63; --urgent-tint:#3A2413;
+    --critical:#EC8078; --critical-tint:#3A1815;
+    --expired:#B7BEC6; --expired-tint:#23282D;
+    --idle:#9AA2B4; --idle-tint:#20242C;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 28px -14px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size:15px; line-height:1.55;
+    padding:0 20px; padding-block: 0;
+  }
+  h1,h2,h3,h4{font-family:"Archivo", ui-sans-serif, system-ui, sans-serif; letter-spacing:-0.01em; text-wrap:balance; margin:0;}
+  code, .mono, .kpi-value, table td.num, .badge-code{font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  a{color:var(--brand);}
+  .container{max-width:1180px; margin:0 auto;}
+  section{padding-block: 56px;}
+  section + section{border-top:1px solid var(--border);}
+  .eyebrow{font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--brand);}
+  .lede{color:var(--ink-soft); max-width:62ch; font-size:16px;}
+  button{font:inherit; cursor:pointer;}
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible{outline:2px solid var(--brand); outline-offset:2px;}
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important; transition:none!important;} }
+
+  /* ---------- topbar ---------- */
+  .topbar{
+    position:sticky; top:env(safe-area-inset-top,0px); z-index:40;
+    background:color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+    margin:0 -20px;
+  }
+  .topbar-inner{
+    max-width:1180px; margin:0 auto; padding:12px 20px;
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  .brandmark{display:flex; align-items:center; gap:10px; font-weight:700; font-size:15px; white-space:nowrap;}
+  .brandmark-text{display:flex; flex-direction:column; gap:1px; line-height:1.2;}
+  .brandmark-text small{font-size:10px; font-weight:600; letter-spacing:.03em; color:var(--muted); text-transform:uppercase;}
+  .crest-slot{display:inline-flex; flex:none;}
+  .crest-slot svg{display:block; width:100%; height:auto;}
+  .topnav{display:flex; gap:2px; flex-wrap:wrap; margin-left:8px;}
+  .topnav a{color:var(--ink-soft); text-decoration:none; font-size:13px; font-weight:600; padding:8px 10px; border-radius:8px;}
+  .topnav a:hover{background:var(--surface-2); color:var(--ink);}
+  .topbar-actions{margin-left:auto; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .switch{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-soft); font-weight:500;}
+  .switch input{accent-color:var(--brand); width:15px; height:15px;}
+  .btn{
+    border:1px solid transparent; border-radius:10px; padding:9px 16px; font-weight:600; font-size:13.5px;
+    display:inline-flex; align-items:center; gap:8px; white-space:nowrap;
+  }
+  .btn-primary{background:var(--btn-bg); color:#fff;}
+  .btn-primary:hover{background:var(--btn-bg-hover);}
+  .btn-ghost{background:transparent; border-color:var(--border); color:var(--ink);}
+  .btn-ghost:hover{background:var(--surface-2);}
+  .btn-accent{background:var(--accent); color:#241a06;}
+
+  /* ---------- note cards (explanatory) ---------- */
+  .note-card{
+    background:var(--brand-tint); border:1px solid color-mix(in srgb, var(--brand) 30%, var(--border));
+    border-radius:12px; padding:14px 16px; font-size:13.5px; color:var(--ink-soft);
+    display:flex; gap:10px;
+  }
+  .note-card b{color:var(--ink);}
+  .note-card .tag{
+    flex:none; font-family:"Archivo"; font-weight:800; font-size:10.5px; letter-spacing:.06em;
+    color:var(--brand-deep); background:var(--surface); border:1px solid var(--border);
+    padding:3px 7px; border-radius:6px; height:fit-content;
+  }
+  body.hide-notes .note-card{display:none;}
+
+  /* ---------- hero ---------- */
+  .hero{padding-top:44px; display:grid; grid-template-columns:1.1fr .9fr; gap:40px; align-items:center;}
+  .hero h1{font-size:clamp(28px, 4vw, 42px); line-height:1.08; margin-top:10px;}
+  .hero-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:26px;}
+  .mini-kpi{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px; box-shadow:var(--shadow);}
+  .mini-kpi .n{font-family:"Archivo"; font-weight:800; font-size:22px;}
+  .mini-kpi .l{font-size:11.5px; color:var(--muted); font-weight:600; margin-top:2px;}
+  .hero-panel{
+    background:var(--surface); border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow);
+    padding:18px; position:relative; overflow:hidden;
+  }
+  .hero-panel::before{content:""; position:absolute; inset:0 0 auto 0; height:5px; background:linear-gradient(90deg,var(--brand) 25%,var(--accent) 25% 50%,var(--her-red) 50% 75%,var(--her-blue) 75%); }
+  .hero-panel h3{font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:12px;}
+  .example-badge{
+    display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:var(--muted);
+    border:1px dashed var(--border); border-radius:999px; padding:3px 9px; margin-bottom:10px;
+  }
+  .example-badge::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--idle);}
+
+  /* ---------- process flow ---------- */
+  .flow{display:flex; gap:0; margin-top:28px; overflow-x:auto; padding-bottom:6px;}
+  .flow-step{
+    flex:1 1 150px; min-width:150px; position:relative; padding:18px 16px 16px; background:var(--surface);
+    border:1px solid var(--border); border-right:none;
+  }
+  .flow-step:first-child{border-radius:14px 0 0 14px;}
+  .flow-step:last-child{border-radius:0 14px 14px 0; border-right:1px solid var(--border);}
+  .flow-step .num{font-family:"Archivo"; font-weight:800; font-size:12px; color:var(--brand); margin-bottom:6px;}
+  .flow-step h4{font-size:14px; margin-bottom:4px;}
+  .flow-step p{font-size:12.5px; color:var(--muted); margin:0;}
+  .flow-step .dotcolor{position:absolute; top:16px; right:14px; width:9px; height:9px; border-radius:50%;}
+
+  /* ---------- section head ---------- */
+  .section-head{display:flex; justify-content:space-between; gap:24px; align-items:flex-start; margin-bottom:24px; flex-wrap:wrap;}
+  .section-head h2{font-size:26px; margin-top:6px;}
+  .section-head .note-card{max-width:340px;}
+
+  /* ---------- kpi row ---------- */
+  .kpi-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:26px;}
+  .kpi-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px;
+    text-align:left; box-shadow:var(--shadow); position:relative;
+  }
+  .kpi-card.active{outline:2px solid var(--brand); outline-offset:-1px;}
+  .kpi-card .stripe{position:absolute; left:0; top:0; bottom:0; width:4px; border-radius:var(--radius) 0 0 var(--radius);}
+  .kpi-card .kpi-value{font-size:28px; font-weight:700;}
+  .kpi-card .kpi-label{font-size:12.5px; color:var(--muted); font-weight:600; margin-top:2px;}
+  .kpi-card .kpi-hint{font-size:11.5px; color:var(--muted); margin-top:8px;}
+
+  /* ---------- charts grid ---------- */
+  .chart-grid{display:grid; grid-template-columns:1.3fr 1fr; gap:16px; margin-bottom:16px;}
+  .chart-grid.row2{grid-template-columns:1fr 1fr;}
+  .panel{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow);}
+  .panel h3{font-size:14px; margin-bottom:2px;}
+  .panel .sub{font-size:12px; color:var(--muted); margin-bottom:14px;}
+  .panel canvas{max-width:100%;}
+  .chart-box{position:relative; height:240px;}
+
+  /* funnel */
+  .funnel{display:flex; flex-direction:column; gap:8px;}
+  .funnel-row{display:grid; grid-template-columns:110px 1fr 46px; align-items:center; gap:10px; font-size:12.5px;}
+  .funnel-track{background:var(--surface-2); border-radius:8px; height:22px; overflow:hidden;}
+  .funnel-fill{height:100%; background:var(--brand); border-radius:8px;}
+  .funnel-row:nth-child(2) .funnel-fill{background:color-mix(in srgb, var(--brand) 85%, var(--accent));}
+  .funnel-row:nth-child(3) .funnel-fill{background:color-mix(in srgb, var(--brand) 65%, var(--accent));}
+  .funnel-row:nth-child(4) .funnel-fill{background:var(--accent);}
+
+  /* ---------- badges / legend ---------- */
+  .legend{display:flex; flex-wrap:wrap; gap:10px 18px; font-size:12px; color:var(--ink-soft); margin:10px 0 22px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .legend i{width:9px; height:9px; border-radius:50%; display:inline-block;}
+  .dot-ok{background:var(--ok);} .dot-warn{background:var(--warn);} .dot-urgent{background:var(--urgent);}
+  .dot-critical{background:var(--critical);} .dot-expired{background:var(--expired);} .dot-idle{background:var(--idle);}
+
+  .badge{
+    display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px;
+  }
+  .badge-ok{color:var(--ok); background:var(--ok-tint);}
+  .badge-warn{color:var(--warn); background:var(--warn-tint);}
+  .badge-urgent{color:var(--urgent); background:var(--urgent-tint);}
+  .badge-critical{color:var(--critical); background:var(--critical-tint);}
+  .badge-expired{color:var(--expired); background:var(--expired-tint);}
+  .badge-idle{color:var(--idle); background:var(--idle-tint);}
+  .badge i{width:7px; height:7px; border-radius:50%; background:currentColor;}
+
+  /* ---------- filters + table ---------- */
+  .filters{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+  .filters input[type=search], .filters select{
+    background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:9px 12px;
+    font-size:13px; color:var(--ink); font-family:inherit;
+  }
+  .filters input[type=search]{flex:1 1 220px; min-width:180px;}
+  .table-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow);}
+  table{border-collapse:collapse; width:100%; min-width:920px; font-size:13px;}
+  thead th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted);
+    padding:12px 14px; border-bottom:1px solid var(--border); white-space:nowrap; background:var(--surface-2);
+  }
+  tbody td{padding:12px 14px; border-bottom:1px solid var(--border); vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr{cursor:pointer;}
+  tbody tr:hover{background:var(--surface-2);}
+  .badges-cell{display:flex; gap:5px; flex-wrap:wrap;}
+  .fiscal-warn{font-size:10.5px; color:var(--critical); font-weight:700; display:inline-flex; align-items:center; gap:4px; margin-top:3px;}
+  .fiscal-warn i{width:6px;height:6px;border-radius:50%;background:var(--critical);}
+  .empty-row td{padding:34px; text-align:center; color:var(--muted);}
+
+  /* ---------- modal ---------- */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(10,14,18,.5); display:none; align-items:flex-start; justify-content:center;
+    padding:40px 16px; z-index:100; overflow-y:auto;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal{
+    background:var(--surface); border-radius:16px; max-width:720px; width:100%; box-shadow:0 30px 60px -20px rgba(0,0,0,.35);
+    border:1px solid var(--border);
+  }
+  .modal-head{display:flex; justify-content:space-between; align-items:flex-start; padding:20px 22px; border-bottom:1px solid var(--border); gap:16px;}
+  .modal-head h3{font-size:19px;}
+  .modal-head .mono{color:var(--muted); font-size:12.5px;}
+  .modal-close{background:var(--surface-2); border:1px solid var(--border); border-radius:8px; width:30px; height:30px; font-size:16px; line-height:1; color:var(--ink-soft);}
+  .modal-body{padding:20px 22px; display:flex; flex-direction:column; gap:20px;}
+  .kv-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px 20px;}
+  .kv{display:flex; flex-direction:column; gap:2px;}
+  .kv .k{font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:600;}
+  .kv .v{font-size:13.5px;}
+  .stage-block{border:1px solid var(--border); border-radius:12px; padding:14px; background:var(--surface-2);}
+  .stage-block .stage-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+  .stage-block .stage-head h4{font-size:13px;}
+  .stage-gatilho{font-size:12.5px; color:var(--ink-soft);}
+  .renov-actions{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .renov-actions button{border:1px solid var(--border); background:var(--surface); border-radius:9px; padding:8px 12px; font-size:12.5px; font-weight:600;}
+  .renov-actions button:hover{background:var(--surface-2);}
+  .renov-actions button.chosen{background:var(--ok-tint); color:var(--ok); border-color:transparent;}
+  .fiscal-card{display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border); border-radius:12px; padding:12px 14px;}
+  .fiscal-card .name{font-weight:600; font-size:13.5px;}
+  .fiscal-card .role{font-size:12px; color:var(--muted);}
+
+  /* ---------- form mockup ---------- */
+  .form-mock{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field.span2{grid-column:span 2;}
+  .field.span3{grid-column:span 3;}
+  .field label{font-size:12px; font-weight:600; color:var(--ink-soft);}
+  .field .fake-input{
+    background:var(--surface-2); border:1px solid var(--border); border-radius:9px; padding:10px 12px; font-size:13px; color:var(--ink);
+  }
+  .field .fake-input.ph{color:var(--muted); font-style:italic;}
+
+  /* ---------- pairs (two-col explain layout) ---------- */
+  .pair{display:grid; grid-template-columns:1fr 300px; gap:32px; align-items:start;}
+  .stack{display:flex; flex-direction:column; gap:16px;}
+  .callout-list{display:flex; flex-direction:column; gap:12px;}
+  .callout{display:flex; gap:12px; align-items:flex-start;}
+  .callout .idx{
+    flex:none; width:26px; height:26px; border-radius:8px; background:var(--brand-tint); color:var(--brand-deep);
+    display:flex; align-items:center; justify-content:center; font-family:"Archivo"; font-weight:800; font-size:12px;
+  }
+  .callout .txt{font-size:13px; color:var(--ink-soft);}
+  .callout .txt b{color:var(--ink);}
+
+  footer{padding:48px 0 60px;}
+  .foot-grid{display:grid; grid-template-columns:1.2fr 1fr; gap:40px;}
+  .foot-cta{background:var(--cta-bg); color:var(--cta-text); border-radius:18px; padding:30px; display:flex; flex-direction:column; gap:14px;}
+  .foot-cta h3{color:var(--cta-text); font-size:20px;}
+  .foot-cta p{color:var(--cta-sub); font-size:13.5px; margin:0;}
+  .foot-cta .btn-accent{align-self:flex-start;}
+  .roadmap-item{display:flex; gap:10px; font-size:13px; color:var(--ink-soft); padding:8px 0; border-bottom:1px solid var(--border);}
+  .roadmap-item:last-child{border-bottom:none;}
+  .roadmap-item .chip{flex:none; font-size:10.5px; font-weight:700; background:var(--surface-2); border:1px solid var(--border); border-radius:999px; padding:2px 8px; height:fit-content;}
+
+  /* ---------- relatório de impressão (só existe no PDF) ---------- */
+  .print-only{display:none;}
+  .print-cover{padding:40px 0 20px;}
+  .print-cover .eyebrow{color:#3B5323;}
+  .print-cover h1{font-size:30px; margin-top:10px;}
+  .print-cover .meta{margin-top:18px; font-size:13px; color:#48525C;}
+  .print-kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:26px;}
+  .print-kpis .pk{border:1px solid #D9DFE3; border-radius:12px; padding:14px;}
+  .print-kpis .pk .n{font-family:"Archivo"; font-weight:800; font-size:24px;}
+  .print-kpis .pk .l{font-size:11.5px; color:#6B7680; font-weight:600; margin-top:2px;}
+  .print-critical h2{font-size:20px; margin-bottom:4px;}
+  .print-critical .sub{font-size:12.5px; color:#6B7680; margin-bottom:16px;}
+  .print-critical table{width:100%; border-collapse:collapse; font-size:12px;}
+  .print-critical th{text-align:left; font-size:10.5px; text-transform:uppercase; color:#6B7680; border-bottom:1px solid #D9DFE3; padding:8px 6px;}
+  .print-critical td{border-bottom:1px solid #E4E8EB; padding:8px 6px; vertical-align:top;}
+  .print-critical td div{color:#48525C; margin-top:2px;}
+
+  /* print */
+  @media print{
+    .topbar, .note-card, .filters, footer, .hero-panel .example-badge, .modal-backdrop,
+    #topo, #fluxo, #processos, #cadastro { display:none !important; }
+    .print-only{display:block;}
+    body{background:#fff; color:#000; padding:0;}
+    #painel{border:none; padding:0;}
+    .print-cover{page-break-after:always;}
+    .print-critical{page-break-before:always;}
+    .chart-grid, .chart-grid.row2, .panel{page-break-inside:avoid;}
+  }
+
+  @media (max-width: 900px){
+    .hero{grid-template-columns:1fr;}
+    .chart-grid, .chart-grid.row2{grid-template-columns:1fr;}
+    .kpi-row{grid-template-columns:1fr 1fr;}
+    .pair{grid-template-columns:1fr;}
+    .form-mock{grid-template-columns:1fr 1fr;}
+    .form-mock .field.span2, .form-mock .field.span3{grid-column:span 2;}
+    .kv-grid{grid-template-columns:1fr;}
+  }
+  @media (max-width:520px){
+    .kpi-row{grid-template-columns:1fr 1fr;}
+    .form-mock{grid-template-columns:1fr;}
+    .form-mock .field.span2, .form-mock .field.span3{grid-column:span 1;}
+    .hero-stats{grid-template-columns:1fr 1fr;}
+  }
+</style>
+
+<div class="print-only print-cover">
+  <div class="crest-slot" id="printCrestSlot" style="width:56px; margin-bottom:14px;"></div>
+  <span class="eyebrow">CEBW · Comissão do Exército Brasileiro em Washington</span>
+  <h1>Gestão de Contratos — Relatório de Processos de Compra</h1>
+  <div class="meta">Gerado em <span id="printGeradoEm">—</span> · <span id="printTotal">0</span> processos cadastrados · dados de exemplo (protótipo)</div>
+  <div class="print-kpis" id="printKpis"></div>
+</div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brandmark">
+      <span class="crest-slot" id="topbarCrestSlot" style="width:28px;"></span>
+      <span class="brandmark-text"><strong>Gestão de Contratos</strong><small>CEBW · Com. do Ex. Bras. em Washington</small></span>
+    </div>
+    <nav class="topnav">
+      <a href="#fluxo">Ciclo</a>
+      <a href="#painel">Painel</a>
+      <a href="#processos">Processos</a>
+      <a href="#cadastro">Cadastro</a>
+    </nav>
+    <div class="topbar-actions">
+      <label class="switch"><input type="checkbox" id="toggleNotes" checked> Anotações explicativas</label>
+      <button class="btn btn-primary" id="btnGerarPdf">Gerar apresentação (PDF)</button>
+    </div>
+  </div>
+</div>
+
+<template id="crestTemplate">
+  <svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Brasão da CEBW">
+    <defs>
+      <clipPath id="crestShield">
+        <path d="M20,10 H180 V150 C180,192 140,222 100,236 C60,222 20,192 20,150 Z"/>
+      </clipPath>
+    </defs>
+    <g clip-path="url(#crestShield)">
+      <rect x="0" y="0" width="100" height="98" fill="#3B5323"/>
+      <rect x="100" y="0" width="100" height="98" fill="#B22234"/>
+      <rect x="100" y="0" width="100" height="14" fill="#fff"/>
+      <rect x="100" y="28" width="100" height="14" fill="#fff"/>
+      <rect x="100" y="56" width="100" height="14" fill="#fff"/>
+      <rect x="100" y="84" width="100" height="14" fill="#fff"/>
+      <rect x="100" y="0" width="44" height="56" fill="#1B3A6B"/>
+      <g fill="#fff">
+        <circle cx="111" cy="9" r="2"/><circle cx="122" cy="9" r="2"/><circle cx="133" cy="9" r="2"/>
+        <circle cx="116" cy="18" r="2"/><circle cx="127" cy="18" r="2"/>
+        <circle cx="111" cy="27" r="2"/><circle cx="122" cy="27" r="2"/><circle cx="133" cy="27" r="2"/>
+        <circle cx="116" cy="36" r="2"/><circle cx="127" cy="36" r="2"/>
+        <circle cx="111" cy="45" r="2"/><circle cx="122" cy="45" r="2"/><circle cx="133" cy="45" r="2"/>
+      </g>
+      <rect x="0" y="98" width="100" height="142" fill="#A6192E"/>
+      <rect x="100" y="98" width="100" height="142" fill="#1B3A6B"/>
+      <!-- leão passante (perfil, andando, voltado para fora do escudo) -->
+      <g fill="#E4B646">
+        <path d="M76,180 Q96,172 90,150 Q88,142 96,140" stroke="#E4B646" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <rect x="60" y="183" width="6" height="18" rx="2"/>
+        <rect x="70" y="183" width="6" height="16" rx="2"/>
+        <ellipse cx="54" cy="180" rx="22" ry="10"/>
+        <rect x="34" y="183" width="6" height="18" rx="2"/>
+        <rect x="44" y="183" width="6" height="16" rx="2"/>
+        <ellipse cx="32" cy="172" rx="9" ry="11"/>
+        <circle cx="24" cy="168" r="10"/>
+        <polygon points="16,166 6,169 16,172"/>
+        <polygon points="26,156 20,144 32,152"/>
+        <polygon points="34,158 34,144 42,154"/>
+        <polygon points="40,164 48,152 46,166"/>
+        <polygon points="20,160 10,152 18,166"/>
+      </g>
+      <circle cx="20" cy="166" r="2" fill="#1B1B1B"/>
+      <!-- grifo passante (perfil espelhado, com bico e asa) -->
+      <g fill="#E4B646">
+        <path d="M124,180 Q104,172 110,150 Q112,142 104,140" stroke="#E4B646" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <rect x="134" y="183" width="6" height="18" rx="2"/>
+        <rect x="124" y="183" width="6" height="16" rx="2"/>
+        <ellipse cx="146" cy="180" rx="22" ry="10"/>
+        <rect x="160" y="183" width="6" height="18" rx="2"/>
+        <rect x="150" y="183" width="6" height="16" rx="2"/>
+        <ellipse cx="168" cy="172" rx="9" ry="11"/>
+        <circle cx="176" cy="168" r="10"/>
+        <polygon points="184,166 194,169 184,172"/>
+        <path d="M150,168 Q170,140 190,152 Q180,164 168,166 Q158,168 150,168 Z"/>
+      </g>
+      <circle cx="180" cy="166" r="2" fill="#1B1B1B"/>
+      <circle cx="146" cy="144" r="2" fill="#1B1B1B"/>
+    </g>
+    <path d="M52,55 l4.6,9.4 10.4,1.5 -7.5,7.3 1.8,10.3 -9.3,-4.9 -9.3,4.9 1.8,-10.3 -7.5,-7.3 10.4,-1.5 Z" fill="#F2C230"/>
+    <path d="M20,10 H180 V150 C180,192 140,222 100,236 C60,222 20,192 20,150 Z" fill="none" stroke="#00000030" stroke-width="3"/>
+    <path d="M20,10 H180" stroke="#00000020" stroke-width="2"/>
+    <path d="M100,10 V150" stroke="#00000015" stroke-width="1.5"/>
+    <path d="M20,98 H180" stroke="#00000015" stroke-width="1.5"/>
+  </svg>
+</template>
+
+<div class="container">
+
+  <!-- HERO -->
+  <section class="hero" id="topo">
+    <div>
+      <div class="crest-slot" id="heroCrestSlot" style="width:58px; margin-bottom:16px;"></div>
+      <span class="eyebrow">Protótipo de validação — não conectado a banco de dados</span>
+      <h1>Substitui a planilha de Processos de Compra por um painel vivo, com cor certa no prazo certo.</h1>
+      <p class="lede" style="margin-top:14px;">
+        Hoje o controle de Processos de Compra internacionais (fornecedor estrangeiro, INCOTERMS, entrega, liquidação, pagamento e renovação) mora numa planilha de 10 abas. Este site propõe o mesmo controle, mas lançado uma vez e mantido sempre atualizado — com quatro semáforos automáticos e um botão para gerar a apresentação de resultados.
+      </p>
+      <div class="hero-stats">
+        <div class="mini-kpi"><div class="n" style="color:var(--critical)">3</div><div class="l">Entregas críticas</div></div>
+        <div class="mini-kpi"><div class="n" style="color:var(--urgent)">2</div><div class="l">Pagamentos atrasados</div></div>
+        <div class="mini-kpi"><div class="n" style="color:var(--expired)">1</div><div class="l">Vigência vencida</div></div>
+        <div class="mini-kpi"><div class="n" style="color:var(--ok)">6</div><div class="l">Processos regulares</div></div>
+      </div>
+      <div class="note-card" style="margin-top:22px;">
+        <span class="tag">Para quem é isso</span>
+        <div>Este sistema é para a <b>CEBW</b> (Comissão do Exército Brasileiro em Washington) — o setor que compra equipamentos e serviços de fornecedores estrangeiros (como Motorola, Harris, MKU e Thales, nos exemplos abaixo).</div>
+      </div>
+      <div class="note-card" style="margin-top:10px;">
+        <span class="tag">Como ver esta página</span>
+        <div>É uma <b>demonstração</b>: nada aqui é real ainda, é só para você experimentar as telas antes de decidirmos construir a versão definitiva. Nenhum dado verdadeiro foi digitado.</div>
+      </div>
+      <div class="note-card" style="margin-top:10px;">
+        <span class="tag">Por onde começar</span>
+        <div>Use o menu lá em cima: <b>Ciclo</b> mostra as etapas de um processo, <b>Painel</b> mostra o resumo geral, <b>Processos</b> é a lista completa, e <b>Cadastro</b> é onde um processo novo seria lançado.</div>
+      </div>
+    </div>
+    <div class="hero-panel">
+      <span class="example-badge">Exemplo ilustrativo</span>
+      <h3>PC 1141/2024 · Confiança International LLC</h3>
+      <div class="kv-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="kv"><span class="k">Material</span><span class="v">Coletes balísticos</span></div>
+        <div class="kv"><span class="k">Valor</span><span class="v mono">R$ 3.120.031,90</span></div>
+        <div class="kv"><span class="k">Vigência</span><span class="v mono">28/09/2026</span></div>
+        <div class="kv"><span class="k">Fiscal</span><span class="v">1º Ten Paula Andrade</span></div>
+      </div>
+      <div class="badges-cell" style="margin-top:14px;">
+        <span class="badge badge-ok"><i></i>Entrega</span>
+        <span class="badge badge-ok"><i></i>Liquidação</span>
+        <span class="badge badge-urgent"><i></i>Pagamento</span>
+        <span class="badge badge-critical"><i></i>Renovação</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FLUXO -->
+  <section id="fluxo">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Como funciona</span>
+        <h2>Um processo, seis etapas, quatro semáforos</h2>
+      </div>
+      <div class="note-card">
+        <span class="tag">O que é isso</span>
+        <div>Todo processo de compra passa pelas mesmas 6 etapas, da abertura até a renovação. O sistema acompanha cada uma separadamente — porque atrasar a entrega e atrasar o pagamento são problemas diferentes, e pedem providências diferentes.</div>
+      </div>
+    </div>
+    <div class="flow">
+      <div class="flow-step"><span class="num">01</span><h4>Processo (PC)</h4><p>Abertura, fornecedor, INCOTERMS e modalidade.</p></div>
+      <div class="flow-step"><span class="num">02</span><h4>Contrato assinado</h4><p>Número do contrato, vigência e fiscal designado.</p><span class="dotcolor dot-idle"></span></div>
+      <div class="flow-step"><span class="num">03</span><h4>Entrega</h4><p>Um ou mais lotes, com data prevista e realizada.</p><span class="dotcolor dot-ok"></span></div>
+      <div class="flow-step"><span class="num">04</span><h4>Liquidação</h4><p>Atesto do fiscal técnico sobre o que foi entregue.</p><span class="dotcolor dot-warn"></span></div>
+      <div class="flow-step"><span class="num">05</span><h4>Pagamento</h4><p>Ordem bancária emitida ao fornecedor.</p><span class="dotcolor dot-urgent"></span></div>
+      <div class="flow-step"><span class="num">06</span><h4>Renovação</h4><p>Gestor decide: aditivo ou extensão de vigência.</p><span class="dotcolor dot-critical"></span></div>
+    </div>
+    <div class="legend">
+      <span><i class="dot-ok"></i>Regular</span>
+      <span><i class="dot-warn"></i>Atenção</span>
+      <span><i class="dot-urgent"></i>Urgente</span>
+      <span><i class="dot-critical"></i>Crítico</span>
+      <span><i class="dot-expired"></i>Vencido / pendente de decisão</span>
+      <span><i class="dot-idle"></i>Em elaboração — ainda sem data</span>
+    </div>
+    <div class="note-card" style="margin-top:20px;">
+      <span class="tag">Sugestão</span>
+      <div>Viu uma bolinha vermelha ou preta em algum processo? É hora de agir. Vá até a seção <b>Processos</b>, mais abaixo, e clique no item para ver exatamente o que precisa ser feito.</div>
+    </div>
+  </section>
+
+  <!-- PAINEL -->
+  <section id="painel">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Painel de controle</span>
+        <h2>Tudo que precisa de atenção, num só lugar</h2>
+      </div>
+      <div class="note-card">
+        <span class="tag">O que é isso</span>
+        <div>Esta é a visão geral: quantos processos estão em dia, quantos precisam de atenção, e onde está o dinheiro comprometido. É a primeira tela que vale abrir ao começar o dia.</div>
+      </div>
+    </div>
+
+    <div class="kpi-row" id="kpiRow"></div>
+    <div class="note-card" style="margin-bottom:26px;">
+      <span class="tag">Sugestão</span>
+      <div>Clique em qualquer um dos números coloridos acima: a lista de processos, mais abaixo, filtra sozinha para mostrar só os casos daquela cor — sem precisar procurar manualmente.</div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="panel">
+        <h3>Vencimentos nos próximos 12 meses</h3>
+        <div class="sub">Vigência/renovação por mês — barras mais escuras marcam meses mais carregados.</div>
+        <div class="chart-box"><canvas id="chartTimeline"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Funil de execução</h3>
+        <div class="sub">Quantos processos avançaram até cada etapa.</div>
+        <div class="funnel">
+          <div class="funnel-row"><span>Assinado</span><div class="funnel-track"><div class="funnel-fill" style="width:100%"></div></div><span class="mono">10</span></div>
+          <div class="funnel-row"><span>Entregue</span><div class="funnel-track"><div class="funnel-fill" style="width:70%"></div></div><span class="mono">7</span></div>
+          <div class="funnel-row"><span>Liquidado</span><div class="funnel-track"><div class="funnel-fill" style="width:50%"></div></div><span class="mono">5</span></div>
+          <div class="funnel-row"><span>Pago</span><div class="funnel-track"><div class="funnel-fill" style="width:30%"></div></div><span class="mono">3</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-grid row2">
+      <div class="panel">
+        <h3>Carga por analista responsável</h3>
+        <div class="sub">Processos ativos por pessoa — ajuda a redistribuir volume.</div>
+        <div class="chart-box"><canvas id="chartCarga"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Valor por país de origem</h3>
+        <div class="sub">Total comprometido por país do fornecedor, cada um na moeda em que o processo foi lançado (sem conversão entre real e dólar).</div>
+        <div class="chart-box"><canvas id="chartPais"></canvas></div>
+      </div>
+    </div>
+
+    <div class="note-card">
+      <span class="tag">Sugestão</span>
+      <div>Precisa mostrar esse painel para alguém rapidinho, numa reunião ou por e-mail? Clique em <b>"Gerar apresentação (PDF)"</b>, lá no topo da página: o site monta sozinho um documento com a capa, os números e a lista do que precisa de atenção — pronto para enviar.</div>
+    </div>
+
+    <div class="print-only print-critical">
+      <h2>Processos que precisam de providência agora</h2>
+      <div class="sub">Qualquer etapa (entrega, liquidação, pagamento ou renovação) em estado crítico/vencido.</div>
+      <table>
+        <thead><tr><th>Nº PC</th><th>Empresa</th><th>Responsável</th><th>Providência</th></tr></thead>
+        <tbody id="printCriticosBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PROCESSOS -->
+  <section id="processos">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">Gestão dos processos</span>
+        <h2>Tabela com os quatro semáforos por linha</h2>
+      </div>
+      <div class="note-card">
+        <span class="tag">O que é isso</span>
+        <div>Aqui estão todos os processos cadastrados, um por linha, com uma bolinha colorida para cada etapa (entrega, liquidação, pagamento e renovação) — a mesma lógica de cores da seção "Ciclo".</div>
+      </div>
+    </div>
+    <div class="note-card" style="margin-bottom:18px;">
+      <span class="tag">Sugestão</span>
+      <div>Não lembra o número do processo? Digite o nome da empresa ou parte do material na busca abaixo. E clique em cima de qualquer linha para abrir todos os detalhes daquele processo.</div>
+    </div>
+
+    <div class="filters">
+      <input type="search" id="fBusca" placeholder="Buscar por PC, empresa ou material…">
+      <select id="fResponsavel"><option value="">Todos os responsáveis</option></select>
+      <select id="fStatus">
+        <option value="">Todas as etapas</option>
+        <option value="entrega">Alerta de entrega</option>
+        <option value="liquidacao">Alerta de liquidação</option>
+        <option value="pagamento">Alerta de pagamento</option>
+        <option value="renovacao">Alerta de renovação</option>
+      </select>
+      <button class="btn btn-ghost" id="btnLimpar">Limpar filtros</button>
+      <button class="btn btn-accent" id="btnNovo">+ Novo processo</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nº PC</th><th>Empresa</th><th>Material</th><th>Responsável</th>
+            <th>Valor</th><th>Vigência</th><th>Semáforos</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyProcessos"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- CADASTRO -->
+  <section id="cadastro">
+    <div class="pair">
+      <div class="stack">
+        <span class="eyebrow">Lançamento direto no site</span>
+        <h2>A planilha entra uma vez só — daqui em diante, o cadastro é aqui</h2>
+        <p class="lede">A planilha atual entra só uma vez, para trazer o histórico. A partir do primeiro dia de uso, todo processo novo — e cada entrega, liquidação e pagamento — é lançado direto neste formulário, sem precisar mexer em Excel de novo.</p>
+        <div class="panel" style="margin-top:6px;">
+          <h3>Novo processo / edição</h3>
+          <div class="sub">Pré-preenchido com um exemplo — em uso real, os campos começam vazios.</div>
+          <div class="form-mock">
+            <div class="field"><label>Nº do PC</label><div class="fake-input mono">1189/2026</div></div>
+            <div class="field"><label>Empresa</label><div class="fake-input">Thales Nederland BV</div></div>
+            <div class="field"><label>País do fornecedor</label><div class="fake-input">Holanda</div></div>
+            <div class="field span2"><label>Material / Objeto</label><div class="fake-input">Sistema de radar de vigilância terrestre</div></div>
+            <div class="field"><label>Modalidade</label><div class="fake-input">Pregão Eletrônico</div></div>
+            <div class="field"><label>Valor (R$)</label><div class="fake-input mono">R$ 1.842.000,00</div></div>
+            <div class="field"><label>Vigência do contrato</label><div class="fake-input mono">14/03/2027</div></div>
+            <div class="field"><label>Responsável (AL)</label><div class="fake-input">Athayane</div></div>
+            <div class="field"><label>Fiscal designado</label><div class="fake-input ph">selecionar ou cadastrar…</div></div>
+            <div class="field span3"><label>Observações</label><div class="fake-input ph">campo livre para anotações do processo…</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="callout-list">
+        <div class="callout"><div class="idx">1</div><div class="txt"><b>Não sabe um dado ainda? Deixe em branco.</b> O sistema nunca inventa ou chuta uma informação — o campo fica vazio até alguém preencher de verdade.</div></div>
+        <div class="callout"><div class="idx">2</div><div class="txt"><b>A mercadoria chega em partes? Sem problema.</b> Dá para registrar mais de uma entrega no mesmo processo, cada uma com sua própria data prevista e data real.</div></div>
+        <div class="callout"><div class="idx">3</div><div class="txt"><b>Todo processo precisa de um fiscal responsável.</b> Se esquecerem de designar alguém, a lista de processos avisa sozinha — ninguém fica "sem dono".</div></div>
+        <div class="callout"><div class="idx">4</div><div class="txt"><b>A renovação é sempre uma decisão sua, não do sistema.</b> Quando o prazo se aproxima, o site só avisa e mostra as duas opções (aditivo ao contrato ou extensão de vigência) — quem escolhe é o gestor.</div></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h3 id="mNrPc">—</h3>
+        <div class="mono" id="mEmpresa">—</div>
+      </div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="kv-grid">
+        <div class="kv"><span class="k">Material</span><span class="v" id="mMaterial">—</span></div>
+        <div class="kv"><span class="k">Valor</span><span class="v mono" id="mValor">—</span></div>
+        <div class="kv"><span class="k">INCOTERM</span><span class="v" id="mIncoterm">—</span></div>
+        <div class="kv"><span class="k">Modalidade</span><span class="v" id="mModalidade">—</span></div>
+        <div class="kv"><span class="k">Assinatura</span><span class="v mono" id="mAssinatura">—</span></div>
+        <div class="kv"><span class="k">Vigência do contrato</span><span class="v mono" id="mVigencia">—</span></div>
+      </div>
+
+      <div class="fiscal-card" id="mFiscalCard">
+        <div><div class="name" id="mFiscalNome">—</div><div class="role" id="mFiscalFuncao">—</div></div>
+        <span class="badge" id="mFiscalBadge">—</span>
+      </div>
+
+      <div class="stage-block">
+        <div class="stage-head"><h4>Entrega</h4><span class="badge" id="bEntrega"></span></div>
+        <div class="stage-gatilho" id="gEntrega"></div>
+      </div>
+      <div class="stage-block">
+        <div class="stage-head"><h4>Liquidação</h4><span class="badge" id="bLiquidacao"></span></div>
+        <div class="stage-gatilho" id="gLiquidacao"></div>
+      </div>
+      <div class="stage-block">
+        <div class="stage-head"><h4>Pagamento</h4><span class="badge" id="bPagamento"></span></div>
+        <div class="stage-gatilho" id="gPagamento"></div>
+      </div>
+      <div class="stage-block">
+        <div class="stage-head"><h4>Renovação / vigência</h4><span class="badge" id="bRenovacao"></span></div>
+        <div class="stage-gatilho" id="gRenovacao"></div>
+        <div class="renov-actions" id="renovActions" hidden>
+          <button data-choice="ADITIVO">Registrar aditivo de contrato</button>
+          <button data-choice="EXTENSAO_VIGENCIA">Registrar extensão de vigência</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="container foot-grid">
+    <div>
+      <span class="eyebrow">Depois da validação</span>
+      <h2 style="margin-top:8px; font-size:24px;">O que falta para sair do protótipo e virar o sistema de verdade</h2>
+      <div style="margin-top:18px;">
+        <div class="roadmap-item"><span class="chip">1</span> Criar o banco (Turso) e as tabelas de processo, entregas e fiscal.</div>
+        <div class="roadmap-item"><span class="chip">2</span> Carregar a planilha inteira uma única vez — nada é descartado, campos vazios ficam vazios.</div>
+        <div class="roadmap-item"><span class="chip">3</span> Ligar o formulário de cadastro/edição real ao banco, no lugar dos campos de exemplo desta página.</div>
+        <div class="roadmap-item"><span class="chip">4</span> Publicar na Vercel e liberar acesso à equipe.</div>
+        <div class="roadmap-item"><span class="chip">5</span> Ativar o botão "Gerar apresentação" com os números reais.</div>
+      </div>
+    </div>
+    <div class="foot-cta">
+      <h3>Aprovar este modelo para desenvolvimento?</h3>
+      <p>Esta tela não grava nada — é só para validar o conceito com quem vai usar o sistema no dia a dia antes de conectar ao banco de dados real.</p>
+      <button class="btn btn-accent" onclick="document.getElementById('topo').scrollIntoView({behavior:'smooth'})">Revisar do início</button>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ---------- brasão (clona o template nos 3 lugares que usam o emblema) ----------
+  (function(){
+    var tpl = document.getElementById('crestTemplate');
+    ['topbarCrestSlot','heroCrestSlot','printCrestSlot'].forEach(function(id){
+      var slot = document.getElementById(id);
+      if (slot && tpl) slot.appendChild(tpl.content.cloneNode(true));
+    });
+  })();
+
+  var HOJE = new Date(2026,8,17); // 17/09/2026
+
+  function dias(d){ return Math.round((d - HOJE)/86400000); }
+  function br(d){ return d ? d.toLocaleDateString('pt-BR') : "—"; }
+  function fmtValor(v, moeda){
+    var prefixo = moeda === 'USD' ? 'US$ ' : 'R$ ';
+    return prefixo + v.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+
+  function semaforoData(dataAlvo, faixas, semData){
+    if (!dataAlvo){
+      return semData || {cor:'idle', label:'Em elaboração', gatilho:'Ainda sem data lançada — normal em processos recém-abertos.'};
+    }
+    var d = dias(dataAlvo);
+    for (var i=0;i<faixas.length;i++){
+      if (d >= faixas[i].min){ return {cor:faixas[i].cor, label:faixas[i].label, gatilho:faixas[i].gatilho}; }
+    }
+    return faixas[faixas.length-1];
+  }
+
+  var FAIXAS_ENTREGA = [
+    {min:30, cor:'ok', label:'Regular', gatilho:'Entrega dentro do prazo — acompanhamento de rotina.'},
+    {min:15, cor:'warn', label:'Atenção', gatilho:'Confirmar com o fornecedor a previsão de embarque.'},
+    {min:5,  cor:'urgent', label:'Urgente', gatilho:'Cobrar tracking/booking do fornecedor esta semana.'},
+    {min:-999, cor:'critical', label:'Crítico / atrasada', gatilho:'Contatar fornecedor — entrega em atraso iminente ou já atrasada.'}
+  ];
+  var FAIXAS_RENOV = [
+    {min:90, cor:'ok', label:'Regular', gatilho:'Vigência confortável — sem ação necessária.'},
+    {min:45, cor:'warn', label:'Atenção', gatilho:'Sondar o fornecedor sobre interesse em continuidade.'},
+    {min:15, cor:'urgent', label:'Urgente', gatilho:'Preparar minuta de aditivo ou nova aquisição.'},
+    {min:0,  cor:'critical', label:'Crítico', gatilho:'Decisão do gestor necessária nos próximos dias.'},
+    {min:-99999, cor:'expired', label:'Vencido — decidir', gatilho:'Vigência vencida: gestor precisa registrar aditivo ou extensão de vigência.'}
+  ];
+
+  function semaforoFinanceiro(diasParado, jaFeito, faixasSemFeito){
+    if (jaFeito) return {cor:'ok', label:'Concluído', gatilho:'Já lançado — nenhuma ação pendente.'};
+    return semaforoData(null, [], null); // placeholder, overridden per case below
+  }
+
+  // ---------- dados de exemplo (fictícios) ----------
+  var PROCESSOS = [
+    {
+      nrPc:'1003/2026', empresa:'MKU Ltd.', pais:'Índia', material:'Equipamento de Visão Noturna',
+      incoterm:'FCA Kanpur, Índia', modalidade:'Pregão Eletrônico', valor:2025280.80, moeda:'BRL',
+      dataAssinatura:new Date(2026,6,30), vigencia:new Date(2028,0,31),
+      entregaPrevista:new Date(2027,8,30), entregaRealizada:null,
+      dataLiquidacao:null, dataPagamento:null,
+      responsavel:'Jerzy', fiscal:{nome:'Cap Renato Farias', funcao:'GESTOR'}, tipoRenovacao:null
+    },
+    {
+      nrPc:'1141/2024', empresa:'Confiança International LLC', pais:'China', material:'Coletes balísticos',
+      incoterm:'FCA Fengtai District, Beijing', modalidade:'Pregão Eletrônico', valor:3120031.90, moeda:'BRL',
+      dataAssinatura:new Date(2024,7,20), vigencia:new Date(2026,8,28),
+      entregaPrevista:new Date(2026,6,10), entregaRealizada:new Date(2026,6,9),
+      dataLiquidacao:new Date(2026,6,12), dataPagamento:null,
+      responsavel:'Paula', fiscal:{nome:'1º Ten Paula Andrade', funcao:'FISCAL_TECNICO'}, tipoRenovacao:null
+    },
+    {
+      nrPc:'1059/2024', empresa:'Harris Global Communications', pais:'Estados Unidos', material:'Capacetes balísticos',
+      incoterm:'FOB Rochester, NY', modalidade:'Inexigibilidade', valor:1476365.00, moeda:'USD',
+      dataAssinatura:new Date(2024,4,10), vigencia:new Date(2027,0,25),
+      entregaPrevista:new Date(2025,2,1), entregaRealizada:new Date(2025,1,26),
+      dataLiquidacao:new Date(2025,2,3), dataPagamento:new Date(2025,2,10),
+      responsavel:'Priscila', fiscal:{nome:'Maj Diego Salgado', funcao:'GESTOR'}, tipoRenovacao:null, concluido:true
+    },
+    {
+      nrPc:'1005/2026', empresa:'Motorola Solutions', pais:'Estados Unidos', material:null,
+      incoterm:null, modalidade:null, valor:332155.00, moeda:'USD',
+      dataAssinatura:null, vigencia:null,
+      entregaPrevista:null, entregaRealizada:null, dataLiquidacao:null, dataPagamento:null,
+      responsavel:'Priscila', fiscal:null, tipoRenovacao:null
+    },
+    {
+      nrPc:'1001/2025', empresa:'Confiança International LLC', pais:'China', material:'Coletes balísticos',
+      incoterm:'FCA Fengtai District, Beijing', modalidade:'Pregão Eletrônico', valor:2692111.90, moeda:'BRL',
+      dataAssinatura:new Date(2025,6,10), vigencia:new Date(2026,7,1),
+      entregaPrevista:new Date(2025,10,15), entregaRealizada:new Date(2025,10,20),
+      dataLiquidacao:new Date(2025,10,28), dataPagamento:new Date(2025,11,20),
+      responsavel:'Athayane', fiscal:{nome:'1º Sgt Marcos Vieira', funcao:'FISCAL_ADMINISTRATIVO'}, tipoRenovacao:null
+    },
+    {
+      nrPc:'1032/2024', empresa:'BIRDON AMERICA INC', pais:'Estados Unidos', material:'Materiais/suprimentos de engenharia',
+      incoterm:'FOB Denver, CO', modalidade:'Pregão Eletrônico', valor:3461817.00, moeda:'USD',
+      dataAssinatura:new Date(2024,9,2), vigencia:new Date(2026,9,2),
+      entregaPrevista:new Date(2026,8,1), entregaRealizada:null,
+      dataLiquidacao:null, dataPagamento:null,
+      responsavel:'Yasmin', fiscal:null, tipoRenovacao:null
+    },
+    {
+      nrPc:'1146/2023', empresa:'BIRDON AMERICA INC', pais:'Estados Unidos', material:'BEB — Bridge Erection Boat',
+      incoterm:'FOB Denver, CO', modalidade:'Pregão Eletrônico', valor:2183684.00, moeda:'USD',
+      dataAssinatura:new Date(2023,6,10), vigencia:new Date(2026,11,1),
+      entregaPrevista:new Date(2026,10,1), entregaRealizada:null,
+      dataLiquidacao:null, dataPagamento:null,
+      responsavel:'Fabiana', fiscal:{nome:'Cap Renato Farias', funcao:'GESTOR'}, tipoRenovacao:null
+    },
+    {
+      nrPc:'1166/2023', empresa:'Confiança International LLC', pais:'Estados Unidos', material:'Coletes balísticos',
+      incoterm:'FOB Miami, FL', modalidade:'Pregão Eletrônico', valor:2950000.00, moeda:'USD',
+      dataAssinatura:new Date(2023,8,20), vigencia:new Date(2026,10,10),
+      entregaPrevista:new Date(2026,7,1), entregaRealizada:new Date(2026,7,3),
+      dataLiquidacao:null, dataPagamento:null,
+      responsavel:'Edgar', fiscal:{nome:'2º Ten Bianca Reis', funcao:'FISCAL_TECNICO'}, tipoRenovacao:null
+    },
+    {
+      nrPc:'1010/2024', empresa:'Motorola Solutions', pais:'Estados Unidos', material:'Radiocomunicação digital troncalizada',
+      incoterm:'FOB Chicago, IL', modalidade:'Inexigibilidade', valor:3871031.00, moeda:'USD',
+      dataAssinatura:new Date(2024,4,1), vigencia:new Date(2026,10,20),
+      entregaPrevista:new Date(2025,5,1), entregaRealizada:new Date(2025,4,28),
+      dataLiquidacao:new Date(2025,5,5), dataPagamento:new Date(2025,5,15),
+      responsavel:'Athayane', fiscal:{nome:'Maj Diego Salgado', funcao:'GESTOR'}, tipoRenovacao:null, concluido:true
+    },
+    {
+      nrPc:'1017/2022', empresa:'Motorola Solutions', pais:'Estados Unidos', material:'Sistema de radiocomunicação digital',
+      incoterm:'FOB Chicago, IL', modalidade:'Pregão Eletrônico', valor:1709042.45, moeda:'USD',
+      dataAssinatura:new Date(2022,9,10), vigencia:new Date(2025,6,20),
+      entregaPrevista:new Date(2023,3,1), entregaRealizada:new Date(2023,2,28),
+      dataLiquidacao:new Date(2023,3,5), dataPagamento:new Date(2023,3,25),
+      responsavel:'Fabiana', fiscal:{nome:'1º Ten Paula Andrade', funcao:'FISCAL_TECNICO'}, tipoRenovacao:'EXTENSAO_VIGENCIA', concluido:true
+    }
+  ];
+
+  function calcSemaforos(p){
+    var out = {};
+    // entrega
+    if (p.entregaRealizada){
+      out.entrega = {cor:'ok', label:'Entregue', gatilho:'Entrega recebida em ' + br(p.entregaRealizada) + '.'};
+    } else if (!p.entregaPrevista){
+      out.entrega = {cor:'idle', label:'Sem previsão', gatilho:'Processo ainda em elaboração — sem data de entrega definida.'};
+    } else {
+      out.entrega = semaforoData(p.entregaPrevista, FAIXAS_ENTREGA);
+    }
+    // liquidacao (só relevante após entrega)
+    if (p.dataLiquidacao){
+      out.liquidacao = {cor:'ok', label:'Liquidado', gatilho:'Liquidado em ' + br(p.dataLiquidacao) + '.'};
+    } else if (!p.entregaRealizada){
+      out.liquidacao = {cor:'idle', label:'Aguardando entrega', gatilho:'Só é possível liquidar depois da entrega ser recebida.'};
+    } else {
+      var dp = dias(p.entregaRealizada);
+      var atraso = dias(HOJE) - dp; // dias desde a entrega até hoje... reaproveitando função dias(HOJE) sempre 0
+      var diasDesdeEntrega = Math.round((HOJE - p.entregaRealizada)/86400000);
+      if (diasDesdeEntrega <= 5) out.liquidacao = {cor:'ok', label:'No prazo', gatilho:'Dentro da janela normal de liquidação.'};
+      else if (diasDesdeEntrega <= 15) out.liquidacao = {cor:'warn', label:'Atenção', gatilho:'Cobrar nota fiscal/atesto do fiscal técnico.'};
+      else if (diasDesdeEntrega <= 30) out.liquidacao = {cor:'urgent', label:'Urgente', gatilho:'Liquidação parada há mais de 15 dias — escalar ao fiscal.'};
+      else out.liquidacao = {cor:'critical', label:'Crítico', gatilho:'Mais de 30 dias sem liquidar — risco de atraso no pagamento.'};
+    }
+    // pagamento (só após liquidação)
+    if (p.dataPagamento){
+      out.pagamento = {cor:'ok', label:'Pago', gatilho:'Pago em ' + br(p.dataPagamento) + '.'};
+    } else if (!p.dataLiquidacao){
+      out.pagamento = {cor:'idle', label:'Aguardando liquidação', gatilho:'Só é possível pagar depois de liquidado.'};
+    } else {
+      var diasDesdeLiq = Math.round((HOJE - p.dataLiquidacao)/86400000);
+      if (diasDesdeLiq <= 5) out.pagamento = {cor:'ok', label:'No prazo', gatilho:'Dentro da janela normal de pagamento.'};
+      else if (diasDesdeLiq <= 15) out.pagamento = {cor:'warn', label:'Atenção', gatilho:'Verificar empenho/ordem bancária.'};
+      else if (diasDesdeLiq <= 30) out.pagamento = {cor:'urgent', label:'Urgente', gatilho:'Pagamento parado há mais de 15 dias.'};
+      else out.pagamento = {cor:'critical', label:'Crítico', gatilho:'Mais de 30 dias sem pagar — verificar ordem bancária.'};
+    }
+    // renovação / vigência
+    if (p.concluido){
+      out.renovacao = {cor:'ok', label:'Encerrado', gatilho:'Processo concluído e pago — sem pendência de vigência.'};
+    } else if (!p.vigencia){
+      out.renovacao = {cor:'idle', label:'Sem vigência definida', gatilho:'Vigência ainda não formalizada.'};
+    } else {
+      out.renovacao = semaforoData(p.vigencia, FAIXAS_RENOV);
+      if (p.tipoRenovacao){
+        out.renovacao = {cor:'ok', label: p.tipoRenovacao==='ADITIVO' ? 'Aditivo registrado' : 'Extensão registrada', gatilho:'Decisão do gestor já registrada.'};
+      }
+    }
+    return out;
+  }
+
+  PROCESSOS.forEach(function(p){ p.sem = calcSemaforos(p); });
+
+  // ---------- KPIs ----------
+  var KPIS = [
+    {key:'entrega', label:'Entregas críticas', cor:'critical'},
+    {key:'liquidacao', label:'Liquidações atrasadas', cor:'urgent'},
+    {key:'pagamento', label:'Pagamentos atrasados', cor:'urgent'},
+    {key:'renovacao', label:'Vigências vencidas', cor:'expired'}
+  ];
+  function countFor(key,cor){
+    return PROCESSOS.filter(function(p){ return p.sem[key] && (cor.indexOf(p.sem[key].cor) !== -1); }).length;
+  }
+  var kpiRow = document.getElementById('kpiRow');
+  var activeFilter = null;
+  var kpiDefs = [
+    {key:'entrega', cor:['critical','urgent'], label:'Entregas em alerta', hint:'crítico ou urgente'},
+    {key:'liquidacao', cor:['critical','urgent'], label:'Liquidações atrasadas', hint:'mais de 15 dias parado'},
+    {key:'pagamento', cor:['critical','urgent'], label:'Pagamentos atrasados', hint:'mais de 15 dias parado'},
+    {key:'renovacao', cor:['expired','critical'], label:'Renovação urgente', hint:'vencido ou decisão iminente'}
+  ];
+  kpiDefs.forEach(function(k){
+    var n = countFor(k.key, k.cor);
+    var el = document.createElement('button');
+    el.className = 'kpi-card'; el.type='button'; el.dataset.key = k.key;
+    el.innerHTML = '<span class="stripe" style="background:var(--'+ (k.cor[0]) +')"></span>' +
+      '<div class="kpi-value">'+n+'</div><div class="kpi-label">'+k.label+'</div><div class="kpi-hint">'+k.hint+' &middot; clique para filtrar</div>';
+    el.addEventListener('click', function(){
+      var isActive = el.classList.contains('active');
+      Array.prototype.forEach.call(kpiRow.children, function(c){ c.classList.remove('active'); });
+      activeFilter = isActive ? null : k.key;
+      if (!isActive) el.classList.add('active');
+      renderTable();
+    });
+    kpiRow.appendChild(el);
+  });
+
+  // ---------- responsaveis select ----------
+  var fResp = document.getElementById('fResponsavel');
+  Array.from(new Set(PROCESSOS.map(function(p){return p.responsavel;}))).sort().forEach(function(r){
+    var o = document.createElement('option'); o.value=r; o.textContent=r; fResp.appendChild(o);
+  });
+
+  function badgeHtml(sem){
+    if (!sem) return '';
+    return '<span class="badge badge-'+sem.cor+'"><i></i>'+sem.label+'</span>';
+  }
+
+  function renderTable(){
+    var q = document.getElementById('fBusca').value.trim().toLowerCase();
+    var resp = fResp.value;
+    var etapa = document.getElementById('fStatus').value;
+    var tbody = document.getElementById('tbodyProcessos');
+    tbody.innerHTML = '';
+    var list = PROCESSOS.filter(function(p){
+      if (q && !((p.nrPc+' '+p.empresa+' '+(p.material||'')).toLowerCase().indexOf(q) !== -1)) return false;
+      if (resp && p.responsavel !== resp) return false;
+      if (etapa && !['critical','urgent','expired'].includes(p.sem[etapa].cor)) return false;
+      if (activeFilter && !['critical','urgent','expired'].includes(p.sem[activeFilter].cor)) return false;
+      return true;
+    });
+    if (!list.length){
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Nenhum processo encontrado com esses filtros.</td></tr>';
+      return;
+    }
+    list.forEach(function(p){
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="mono">'+p.nrPc+'</td>' +
+        '<td>'+p.empresa+'<div style="color:var(--muted); font-size:11.5px;">'+p.pais+'</div></td>' +
+        '<td>'+(p.material || '<span style="color:var(--muted); font-style:italic;">em elaboração</span>')+'</td>' +
+        '<td>'+p.responsavel + (p.fiscal ? '' : '<div class="fiscal-warn"><i></i>sem fiscal</div>') + '</td>' +
+        '<td class="num">'+ (p.valor ? fmtValor(p.valor, p.moeda) : '—') +'</td>' +
+        '<td class="mono">'+ br(p.vigencia) +'</td>' +
+        '<td><div class="badges-cell">'+badgeHtml(p.sem.entrega)+badgeHtml(p.sem.liquidacao)+badgeHtml(p.sem.pagamento)+badgeHtml(p.sem.renovacao)+'</div></td>';
+      tr.addEventListener('click', function(){ openModal(p); });
+      tbody.appendChild(tr);
+    });
+  }
+  document.getElementById('fBusca').addEventListener('input', renderTable);
+  fResp.addEventListener('change', renderTable);
+  document.getElementById('fStatus').addEventListener('change', renderTable);
+  document.getElementById('btnLimpar').addEventListener('click', function(){
+    document.getElementById('fBusca').value=''; fResp.value=''; document.getElementById('fStatus').value='';
+    activeFilter=null; Array.prototype.forEach.call(kpiRow.children, function(c){ c.classList.remove('active'); });
+    renderTable();
+  });
+  document.getElementById('btnNovo').addEventListener('click', function(){
+    document.getElementById('cadastro').scrollIntoView({behavior:'smooth'});
+  });
+
+  // ---------- modal ----------
+  var backdrop = document.getElementById('modalBackdrop');
+  function openModal(p){
+    document.getElementById('mNrPc').textContent = 'PC ' + p.nrPc;
+    document.getElementById('mEmpresa').textContent = p.empresa + ' · ' + p.pais;
+    document.getElementById('mMaterial').textContent = p.material || '—';
+    document.getElementById('mValor').textContent = p.valor ? fmtValor(p.valor, p.moeda) : '—';
+    document.getElementById('mIncoterm').textContent = p.incoterm || '—';
+    document.getElementById('mModalidade').textContent = p.modalidade || '—';
+    document.getElementById('mAssinatura').textContent = br(p.dataAssinatura);
+    document.getElementById('mVigencia').textContent = br(p.vigencia);
+
+    var fCard = document.getElementById('mFiscalCard');
+    if (p.fiscal){
+      document.getElementById('mFiscalNome').textContent = p.fiscal.nome;
+      document.getElementById('mFiscalFuncao').textContent = p.fiscal.funcao.replace('_',' ');
+      document.getElementById('mFiscalBadge').className = 'badge badge-ok'; document.getElementById('mFiscalBadge').innerHTML='<i></i>Designado';
+    } else {
+      document.getElementById('mFiscalNome').textContent = 'Fiscal ainda não designado';
+      document.getElementById('mFiscalFuncao').textContent = 'Obrigatório antes da execução avançar';
+      document.getElementById('mFiscalBadge').className = 'badge badge-critical'; document.getElementById('mFiscalBadge').innerHTML='<i></i>Pendente';
+    }
+
+    ['entrega','liquidacao','pagamento','renovacao'].forEach(function(stage){
+      var s = p.sem[stage];
+      document.getElementById('b'+cap(stage)).className = 'badge badge-'+s.cor;
+      document.getElementById('b'+cap(stage)).innerHTML = '<i></i>'+s.label;
+      document.getElementById('g'+cap(stage)).textContent = s.gatilho;
+    });
+
+    var renovActions = document.getElementById('renovActions');
+    var showActions = ['expired','critical'].includes(p.sem.renovacao.cor) && !p.tipoRenovacao;
+    renovActions.hidden = !showActions;
+    Array.prototype.forEach.call(renovActions.querySelectorAll('button'), function(btn){
+      btn.classList.toggle('chosen', p.tipoRenovacao === btn.dataset.choice);
+      btn.onclick = function(){
+        p.tipoRenovacao = btn.dataset.choice;
+        p.sem = calcSemaforos(p);
+        openModal(p);
+        renderTable();
+      };
+    });
+
+    backdrop.classList.add('open');
+  }
+  function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+  document.getElementById('modalClose').addEventListener('click', function(){ backdrop.classList.remove('open'); });
+  backdrop.addEventListener('click', function(e){ if (e.target===backdrop) backdrop.classList.remove('open'); });
+  document.addEventListener('keydown', function(e){ if (e.key==='Escape') backdrop.classList.remove('open'); });
+
+  renderTable();
+
+  // ---------- notes toggle ----------
+  document.getElementById('toggleNotes').addEventListener('change', function(e){
+    document.body.classList.toggle('hide-notes', !e.target.checked);
+  });
+
+  // ---------- charts ----------
+  function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  var chartTimeline, chartCarga, chartPais;
+  function renderCharts(){
+    [chartTimeline, chartCarga, chartPais].forEach(function(c){ if (c) c.destroy(); });
+
+    var months = ['Set/26','Out/26','Nov/26','Dez/26','Jan/27','Fev/27','Mar/27','Abr/27','Mai/27','Jun/27','Jul/27','Ago/27'];
+    var counts = [1,2,1,0,0,1,1,0,0,0,0,1];
+    chartTimeline = new Chart(document.getElementById('chartTimeline'), {
+      type:'bar',
+      data:{ labels:months, datasets:[{ data:counts, backgroundColor: counts.map(function(c,i){ return i<2 ? cssVar('--critical') : (i<4 ? cssVar('--urgent') : cssVar('--brand')); }), borderRadius:5, maxBarThickness:26 }]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, ticks:{precision:0, color:cssVar('--muted')}, grid:{color:cssVar('--border')} }, x:{ ticks:{color:cssVar('--muted')}, grid:{display:false} } } }
+    });
+
+    var analistas = Array.from(new Set(PROCESSOS.map(function(p){return p.responsavel;})));
+    var cargaData = analistas.map(function(a){ return PROCESSOS.filter(function(p){return p.responsavel===a;}).length; });
+    chartCarga = new Chart(document.getElementById('chartCarga'), {
+      type:'bar',
+      data:{ labels:analistas, datasets:[{ data:cargaData, backgroundColor:cssVar('--brand'), borderRadius:5, maxBarThickness:18 }]},
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ beginAtZero:true, ticks:{precision:0,color:cssVar('--muted')}, grid:{color:cssVar('--border')} }, y:{ ticks:{color:cssVar('--muted')}, grid:{display:false} } } }
+    });
+
+    var paises = Array.from(new Set(PROCESSOS.map(function(p){return p.pais;})));
+    var paisTotais = paises.map(function(pa){ return PROCESSOS.filter(function(p){return p.pais===pa && p.valor;}).reduce(function(a,p){return a+p.valor;},0); });
+    // cada país soma na moeda dos próprios processos (sem conversão) — usa a moeda predominante daquele país no rótulo
+    var paisMoeda = paises.map(function(pa){
+      var procs = PROCESSOS.filter(function(p){return p.pais===pa && p.valor;});
+      return procs.length && procs[0].moeda === 'USD' ? 'USD' : 'BRL';
+    });
+    var paisCores = [cssVar('--brand'), cssVar('--accent'), cssVar('--urgent'), cssVar('--ok'), cssVar('--warn')];
+    chartPais = new Chart(document.getElementById('chartPais'), {
+      type:'doughnut',
+      data:{ labels:paises, datasets:[{ data:paisTotais, backgroundColor:paises.map(function(_,i){return paisCores[i % paisCores.length];}), borderWidth:0 }]},
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{ position:'bottom', labels:{color:cssVar('--ink-soft')} },
+          tooltip:{ callbacks:{ label:function(ctx){ return ' ' + ctx.label + ': ' + fmtValor(ctx.parsed, paisMoeda[ctx.dataIndex]); } } }
+        },
+        cutout:'62%' }
+    });
+  }
+  renderCharts();
+
+  // ---------- PDF ----------
+  // Salva no PDF exatamente o que está na tela; se quem gerou estiver em modo escuro,
+  // o relatório sairia com fundo escuro/gráficos claros. Por isso força tema claro
+  // (e redesenha os gráficos com essa paleta) só durante a impressão, e devolve o tema
+  // original do viewer logo em seguida.
+  var themeBeforePrint = null;
+  function montarRelatorioImpressao(){
+    var agora = new Date();
+    document.getElementById('printGeradoEm').textContent = agora.toLocaleDateString('pt-BR') + ' às ' + agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('printTotal').textContent = PROCESSOS.length;
+    document.getElementById('printKpis').innerHTML = kpiDefs.map(function(k){
+      return '<div class="pk"><div class="n">'+countFor(k.key,k.cor)+'</div><div class="l">'+k.label+'</div></div>';
+    }).join('');
+
+    var criticos = PROCESSOS.filter(function(p){
+      return ['entrega','liquidacao','pagamento','renovacao'].some(function(st){
+        return ['critical','expired'].includes(p.sem[st].cor);
+      });
+    });
+    var tbody = document.getElementById('printCriticosBody');
+    tbody.innerHTML = criticos.map(function(p){
+      var linhas = ['entrega','liquidacao','pagamento','renovacao']
+        .filter(function(st){ return ['critical','expired'].includes(p.sem[st].cor); })
+        .map(function(st){ return '<div><b>' + cap(st) + ':</b> ' + p.sem[st].gatilho + '</div>'; })
+        .join('');
+      return '<tr><td class="mono">'+p.nrPc+'</td><td>'+p.empresa+'</td><td>'+p.responsavel+'</td><td>'+linhas+'</td></tr>';
+    }).join('') || '<tr><td colspan="4">Nenhum processo em alerta crítico no momento.</td></tr>';
+  }
+  function gerarApresentacao(){
+    themeBeforePrint = document.documentElement.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme','light');
+    montarRelatorioImpressao();
+    renderCharts();
+    setTimeout(function(){ window.print(); }, 60);
+  }
+  window.addEventListener('afterprint', function(){
+    if (themeBeforePrint) document.documentElement.setAttribute('data-theme', themeBeforePrint);
+    else document.documentElement.removeAttribute('data-theme');
+    renderCharts();
+  });
+  document.getElementById('btnGerarPdf').addEventListener('click', gerarApresentacao);
+
+})();
+</script>
