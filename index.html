@@ -1,5 +1,10 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
 <meta charset="utf-8">
-<title>Gestão de Contratos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="SIGCON CEBW - Gestão e Fiscalização de Contratos e Processos de Compra">
+<title>Gestão de Contratos · SIGCON CEBW</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -327,12 +332,28 @@
     .kv-grid{grid-template-columns:1fr;}
   }
   @media (max-width:520px){
-    .kpi-row{grid-template-columns:1fr 1fr;}
+    .kpi-row{grid-template-columns:1fr 1fr; gap:10px;}
     .form-mock{grid-template-columns:1fr;}
     .form-mock .field.span2, .form-mock .field.span3{grid-column:span 1;}
-    .hero-stats{grid-template-columns:1fr 1fr;}
+    .hero-stats{grid-template-columns:1fr 1fr; gap:10px;}
+    .topbar-inner{padding:10px 14px; gap:12px; justify-content:space-between;}
+    .topnav{width:100%; overflow-x:auto; padding-bottom:4px; gap:8px;}
+    .topbar-actions{width:100%; justify-content:space-between;}
+    .table-scroll{position:relative;}
+    .table-scroll::before{
+      content:"👉 Deslize horizontalmente para ver todas as colunas";
+      display:block; font-size:11px; font-weight:600; color:var(--muted);
+      padding:6px 10px; background:var(--surface-2); border-bottom:1px dashed var(--border);
+    }
+  }
+  @media (max-width:380px){
+    .kpi-row, .hero-stats{grid-template-columns:1fr;}
+    .topbar-actions{flex-direction:column; align-items:stretch; gap:8px;}
+    .topbar-actions .btn{width:100%; text-align:center;}
   }
 </style>
+</head>
+<body>
 
 <div class="print-only print-cover">
   <div class="crest-slot" id="printCrestSlot" style="width:56px; margin-bottom:14px;"></div>
@@ -1130,3 +1151,5 @@
 
 })();
 </script>
+</body>
+</html>
