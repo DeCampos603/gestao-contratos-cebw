@@ -64,7 +64,7 @@
     padding:0 20px; padding-block: 0;
   }
   h1,h2,h3,h4{font-family:"Archivo", ui-sans-serif, system-ui, sans-serif; letter-spacing:-0.01em; text-wrap:balance; margin:0;}
-  code, .mono, .kpi-value, table td.num, .badge-code{font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+  code, .mono, .kpi-value, .mini-kpi .n, table, table th.num, table td.num, .badge-code{font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric:tabular-nums;}
   a{color:var(--brand);}
   .container{max-width:1180px; margin:0 auto;}
   section{padding-block: 56px;}
@@ -92,7 +92,8 @@
   .brandmark-text small{font-size:10px; font-weight:600; letter-spacing:.03em; color:var(--muted); text-transform:uppercase;}
   .crest-slot{display:inline-flex; flex:none;}
   .crest-slot svg{display:block; width:100%; height:auto;}
-  .topnav{display:flex; gap:2px; flex-wrap:wrap; margin-left:8px;}
+  .topnav{display:flex; gap:2px; flex-wrap:wrap; margin-left:8px; scrollbar-width:none; -ms-overflow-style:none;}
+  .topnav::-webkit-scrollbar, .flow::-webkit-scrollbar, .filters::-webkit-scrollbar, .renov-actions::-webkit-scrollbar{display:none;}
   .topnav a{color:var(--ink-soft); text-decoration:none; font-size:13px; font-weight:600; padding:8px 10px; border-radius:8px;}
   .topnav a:hover{background:var(--surface-2); color:var(--ink);}
   .topbar-actions{margin-left:auto; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
@@ -142,7 +143,7 @@
   .example-badge::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--idle);}
 
   /* ---------- process flow ---------- */
-  .flow{display:flex; gap:0; margin-top:28px; overflow-x:auto; padding-bottom:6px;}
+  .flow{display:flex; gap:0; margin-top:28px; overflow-x:auto; padding-bottom:6px; scrollbar-width:none; -ms-overflow-style:none;}
   .flow-step{
     flex:1 1 150px; min-width:150px; position:relative; padding:18px 16px 16px; background:var(--surface);
     border:1px solid var(--border); border-right:none;
@@ -208,7 +209,7 @@
   .badge i{width:7px; height:7px; border-radius:50%; background:currentColor;}
 
   /* ---------- filters + table ---------- */
-  .filters{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+  .filters{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; scrollbar-width:none; -ms-overflow-style:none;}
   .filters input[type=search], .filters select{
     background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:9px 12px;
     font-size:13px; color:var(--ink); font-family:inherit;
@@ -749,8 +750,10 @@
   function dias(d){ return Math.round((d - HOJE)/86400000); }
   function br(d){ return d ? d.toLocaleDateString('pt-BR') : "—"; }
   function fmtValor(v, moeda){
+    var n = Number(v) || 0;
+    if (Math.abs(n) < 0.005) n = 0;
     var prefixo = moeda === 'USD' ? 'US$ ' : 'R$ ';
-    return prefixo + v.toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
+    return (n < 0 ? '-' : '') + prefixo + Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2});
   }
 
   function semaforoData(dataAlvo, faixas, semData){
